@@ -72,7 +72,7 @@ def test_pipeline_no_vocal_sections_returns_baseline(tmp_path, song):
 def test_report_has_required_keys(tmp_path, song):
     path, seps = song()
     rep = run_pipeline(path, tmp_path / "o", seps, PipelineConfig(write_mp3=False))
-    for k in ["input", "duration_s", "channels", "models", "config", "sections", "section_gains_db",
+    for k in ["input", "duration_s", "channels", "models", "config", "sections", "section_gains_db", "final_gain_db", "constants",
               "restore_amount", "residual_spans", "timings_s"]:
         assert k in rep
     assert rep["models"] == ["a", "b"]
@@ -83,6 +83,10 @@ def test_report_has_required_keys(tmp_path, song):
     assert set(rep["timings_s"]) == {"load", "separate", "ensemble", "sections", "restore", "loudness",
                                      "residual", "write"}
     assert rep["config"]["strength"] == 0.5
+    assert rep["final_gain_db"] <= 0.0
+    assert {"sections", "restore", "loudness", "residual", "separate"} <= set(rep["constants"])
+    assert rep["constants"]["sections"]["V_RATIO_THRESHOLD"] == 0.12
+    assert rep["constants"]["residual"]["reduction"] == 0.8
 
 
 def test_reusing_stems_skips_separation(tmp_path, song):

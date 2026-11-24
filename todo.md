@@ -15,3 +15,12 @@
   - [ ] Step 4: 사용자 청취 판정 (Gaudio 파일 필요, 컨트롤러가 진행)
   - [x] Step 5: 커밋
   - [ ] Step 6: 판정에 따른 분기
+
+## Phase 1 진입 조건 (최종 리뷰 결과, 2026-11-24)
+- [ ] BS-RoFormer(`DEFAULT_MODELS[0]`) 라이선스 확인 또는 대체 모델 선택 (MODELS.md에 unknown 있음)
+- [ ] 작업별(per-job) work_dir: 지금은 `input.wav` 이름이 고정이라 동시 작업 시 충돌
+- [ ] ffmpeg 실패 시 stderr를 오류 메시지에 포함
+- [ ] sections/envelope 메모리 (긴 곡·동시 작업 시 RAM 2~3GB/곡)
+- [ ] 잔여 스캔 비용 (전체 시간의 약 45%) 줄이기 또는 선택 사항으로
+- [ ] 음량 목표 결정: "원곡 음량 흐름 따르기"(현재, 원곡보다 커질 수 있음) vs "잃어버린 반주만 복구"
+- 참고: Review Focus 2에서 계획한 테스트 이름은 `test_normalize_stems_restores_mono_from_stereo` + gpu 유니코드 테스트가 대신 다룬다.

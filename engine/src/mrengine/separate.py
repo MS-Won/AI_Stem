@@ -20,6 +20,8 @@ DEFAULT_MODELS: list[str] = [
     "htdemucs_ft.yaml",  # Demucs 4-stem
 ]
 
+INPUT_HEADROOM = 0.9  # 분리기에 넣는 입력의 최대 피크. 라이브러리의 피크 1.0 정규화를 피한다
+
 _STEM_RE = re.compile(r"_\(([^)]+)\)_")
 
 
@@ -55,13 +57,17 @@ def normalize_stems(vocals: np.ndarray, instrumental: np.ndarray, like: np.ndarr
 class AudioSeparatorBackend:
     """audio-separator 모델 하나. 모델은 생성 시 한 번 로드해 재사용한다."""
 
-    def __init__(self, model_filename: str, model_dir: Path, work_dir: Path):
-        from audio_separator.separator import Separator as _Separator
-
+    def __init__(self, model_filename: str, model_dir: Path, work_dir: Path, _sep=None):
+        """`_sep`은 테스트용: 라이브러리 Separator 대신 쓸 객체(load_model 불필요)."""
         self.name = model_filename
         self.work_dir = Path(work_dir)
         self.work_dir.mkdir(parents=True, exist_ok=True)
         Path(model_dir).mkdir(parents=True, exist_ok=True)
+        if _sep is not None:
+            self._sep = _sep
+            return
+        from audio_separator.separator import Separator as _Separator
+
         self._sep = _Separator(
             model_file_dir=str(model_dir),
             output_dir=str(self.work_dir),
@@ -74,7 +80,12 @@ class AudioSeparatorBackend:
     def separate(self, mix: np.ndarray) -> Stems:
         # 경로의 한글/공백/'#'이 문제되지 않도록 ASCII 임시 이름으로 쓴다.
         inp = self.work_dir / "input.wav"
-        sf.write(str(inp), mix.T, SR, subtype="FLOAT")
+        # audio-separator(MDXC)는 입력 피크가 1을 넘으면 1로 줄여 분리하고 되돌리지 않는다. 음량 보정된 MR처럼
+        # 피크가 1을 넘는 입력은 보컬이 1/피크배로 작게 나와 잔여 스캔이 어긋난다. 미리 피크 0.9 이하로 낮춰
+        # 라이브러리가 건드리지 않게 하고, 나온 스템에 같은 배율을 곱해 원래 크기로 돌린다.
+        peak = float(np.max(np.abs(mix))) if mix.size else 0.0
+        p = max(1.0, peak / INPUT_HEADROOM)
+        sf.write(str(inp), (mix / p).T, SR, subtype="FLOAT")
         try:
             outs = self._sep.separate(str(inp))
         finally:
@@ -102,4 +113,4 @@ class AudioSeparatorBackend:
                 raise RuntimeError(f"{self.name}: 반주 스템이 없다.")
             n = min(o.shape[1] for o in others)
             inst = sum(o[:, :n] for o in others)
-        return normalize_stems(stems["vocals"], inst, like=mix)
+        return normalize_stems(stems["vocals"] * p, inst * p, like=mix)

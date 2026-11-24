@@ -8,6 +8,11 @@ from pathlib import Path
 
 import numpy as np
 
+from mrengine import loudness as loudness_mod
+from mrengine import residual as residual_mod
+from mrengine import restore as restore_mod
+from mrengine import sections as sections_mod
+from mrengine import separate as separate_mod
 from mrengine.audio_io import SR, load_audio, write_mp3, write_wav
 from mrengine.ensemble import EnsembleMethod, ensemble
 from mrengine.loudness import finalize, restore_section_loudness
@@ -40,6 +45,23 @@ def finalize_pair(baseline: np.ndarray, restored: np.ndarray) -> tuple[np.ndarra
     return both[: baseline.shape[0]], both[baseline.shape[0] :]
 
 
+def _constants() -> dict:
+    """리포트를 재현할 수 있도록 실제 쓰인 모듈 상수를 기록한다."""
+    def pick(mod, names):
+        return {n: getattr(mod, n) for n in names}
+
+    return {
+        "sections": pick(sections_mod, ["V_RATIO_THRESHOLD", "CHOIR_ABS_WIDTH_HZ", "CHOIR_WIDTH_RATIO",
+                                        "REF_WIDTH_PERCENTILE", "CHOIR_FLATNESS_THRESHOLD", "BAND_LO_HZ",
+                                        "BAND_HI_HZ", "ENERGY_FRACTION", "MEDIAN_FILTER_S",
+                                        "CHOIR_MEDIAN_FILTER_S"]),
+        "restore": pick(restore_mod, ["EDGE_RAMP_S", "MIN_REF_FRAME_FRACTION", "PHASE_SWITCH"]),
+        "loudness": {**pick(loudness_mod, ["REF_WINDOW_S", "MIN_REF_S", "RAMP_S"]), "ceiling_db": -1.0},
+        "residual": {**pick(residual_mod, ["WINDOW_S", "FADE_S"]), "reduction": 0.8},
+        "separate": pick(separate_mod, ["INPUT_HEADROOM"]),
+    }
+
+
 def _section_amounts(sections, amount: np.ndarray) -> list[float]:
     t = frame_times(len(amount))
     out = []
@@ -53,9 +75,10 @@ def run_pipeline(
     input_path: Path,
     out_dir: Path,
     separators: list[Separator],
-    config: PipelineConfig = PipelineConfig(),
+    config: PipelineConfig | None = None,
     stems: list[Stems] | None = None,
 ) -> dict:
+    config = config or PipelineConfig()
     timings: dict[str, float] = {}
     t0 = time.perf_counter()
 
@@ -99,7 +122,10 @@ def run_pipeline(
         spans = []
     lap("residual")
 
+    peak_before = max(float(np.max(np.abs(baseline))), float(np.max(np.abs(restored))))
     baseline, restored = finalize_pair(baseline, restored)
+    peak_after = max(float(np.max(np.abs(baseline))), float(np.max(np.abs(restored))))
+    final_gain_db = 20 * np.log10(peak_after / peak_before) if peak_before > 0 and peak_after > 0 else 0.0
     write_wav(out_dir / "mr_baseline.wav", baseline)
     write_wav(out_dir / "mr_restored.wav", restored)
     if config.write_mp3:
@@ -115,6 +141,8 @@ def run_pipeline(
         "config": asdict(config),
         "sections": [s.to_dict() for s in sections],
         "section_gains_db": [float(g) for g in gains],
+        "final_gain_db": float(final_gain_db),  # finalize_pair가 두 MR에 같이 곱한 감쇄(dB, 0 이하)
+        "constants": _constants(),
         "restore_amount": _section_amounts(sections, amount),
         "residual_spans": [s.to_dict() for s in spans],
         "timings_s": timings,

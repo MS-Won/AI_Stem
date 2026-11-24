@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+import soundfile as sf
 from conftest import rms
 
 from mrengine.separate import (
@@ -70,3 +71,32 @@ def test_real_model_separates_noise_from_tone(tmp_path, tone, band_noise):
     stems = be.separate(mix)
     assert rms(stems.vocals) + rms(stems.instrumental) > 0.01
     assert np.isfinite(stems.vocals).all() and np.isfinite(stems.instrumental).all()
+
+
+class _FakeLibSeparator:
+    """audio-separator(MDXC) 흉내: 입력 피크가 1을 넘으면 1로 줄여 분리하고, 라이브러리 이름 규칙으로 쓴다."""
+
+    def __init__(self, out_dir):
+        self.out_dir = out_dir
+
+    def separate(self, path):
+        data, _ = sf.read(path, dtype="float32", always_2d=True)
+        peak = float(np.abs(data).max())
+        if peak > 1.0:
+            data = data / peak
+        vocals = data * 0.3
+        names = []
+        for kind, x in (("Vocals", vocals), ("Instrumental", data - vocals)):
+            name = f"input_({kind})_fake.wav"
+            sf.write(str(self.out_dir / name), x, SR, subtype="FLOAT")
+            names.append(name)
+        return names
+
+
+@pytest.mark.parametrize("amp", [2.0, 0.5, 1.0])
+def test_backend_restores_scale_for_loud_input(tmp_path, tone, amp):
+    mix = tone(440, 1.0, amp)
+    be = AudioSeparatorBackend("fake", tmp_path / "m", tmp_path / "w", _sep=_FakeLibSeparator(tmp_path / "w"))
+    stems = be.separate(mix)
+    np.testing.assert_allclose(stems.vocals + stems.instrumental, mix, atol=1e-5)
+    np.testing.assert_allclose(stems.vocals, mix * 0.3, atol=1e-5)

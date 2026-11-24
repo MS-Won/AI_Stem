@@ -12,7 +12,7 @@ def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(prog="mrengine", description="합창을 인식하는 MR 생성")
     p.add_argument("input", type=Path)
     p.add_argument("--out", type=Path, required=True)
-    p.add_argument("--strength", type=float, default=0.5)
+    p.add_argument("--strength", type=float, default=1.0)  # 추천 조합(s1.0_avg). PipelineConfig 기본값 0.5는 라이브러리 호출용 보수적 값
     p.add_argument("--ensemble", choices=["avg", "min_mag", "max_mag"], default="avg")
     p.add_argument("--models", default=",".join(DEFAULT_MODELS), help="쉼표로 구분한 모델 파일명")
     args = p.parse_args(argv)
