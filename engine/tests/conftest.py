@@ -48,3 +48,20 @@ def band_rms(x: np.ndarray, start_s: float, end_s: float, freq_hz: float, width_
     fsel = (f >= freq_hz - width_hz / 2) & (f <= freq_hz + width_hz / 2)
     tsel = (t >= start_s) & (t < end_s)
     return rms(mag[:, fsel][:, :, tsel])
+
+
+class FakeSeparator:
+    """미리 정한 보컬 배열을 돌려주는 테스트용 분리기. separate 호출 횟수는 calls에 기록한다."""
+
+    def __init__(self, vocals: np.ndarray, instrumental: np.ndarray | None = None, name: str = "fake"):
+        self.vocals = vocals
+        self.instrumental = instrumental
+        self.name = name
+        self.calls = 0
+
+    def separate(self, mix: np.ndarray):
+        from mrengine.separate import normalize_stems
+
+        self.calls += 1
+        inst = self.instrumental if self.instrumental is not None else mix - self.vocals
+        return normalize_stems(self.vocals, inst, like=mix)
