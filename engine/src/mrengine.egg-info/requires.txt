@@ -1,7 +1,0 @@
-numpy
-scipy
-soundfile
-matplotlib
-
-[gpu]
-audio-separator[gpu]

@@ -1,8 +1,0 @@
-pyproject.toml
-src/mrengine/__init__.py
-src/mrengine.egg-info/PKG-INFO
-src/mrengine.egg-info/SOURCES.txt
-src/mrengine.egg-info/dependency_links.txt
-src/mrengine.egg-info/requires.txt
-src/mrengine.egg-info/top_level.txt
-tests/test_audio_io.py
