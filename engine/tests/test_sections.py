@@ -66,3 +66,34 @@ def test_synthetic_stft_shape_sanity(synthetic_song):
     r = (np.abs(stft(v)) ** 2).sum((0, 1)) / (np.abs(stft(mix)) ** 2).sum((0, 1))
     t = frame_times(len(r))
     assert r[(t > 3.5) & (t < 5.5)].min() > 0.25 and r[(t > 6.5) & (t < 8.5)].min() > 0.25
+
+
+def _burst_song(tone, band_noise, seconds):
+    inst = tone(200, 6.0, 0.1)
+    v = np.zeros_like(inst)
+    n = int(round(seconds * SR))
+    v[:, 2 * SR : 2 * SR + n] = band_noise(300, 6000, seconds, 0.5)
+    return v, inst + v
+
+
+def test_min_len_drops_burst_that_survives_smoothing(tone, band_noise):
+    v, mix = _burst_song(tone, band_noise, 0.7)
+    assert detect_vocal_sections(v, mix, min_len_s=1.0) == []
+    kept = detect_vocal_sections(v, mix, min_len_s=0.5)
+    assert len(kept) == 1 and kept[0].kind == "choir"
+
+
+def test_mostly_choir_song_detects_choir(tone, band_noise):
+    inst = tone(200, 11.0, 0.1)
+    v = np.zeros_like(inst)
+    v[:, SR : 9 * SR] = band_noise(300, 6000, 8.0, 0.5)
+    v[:, 9 * SR :] = tone(440, 2.0, 0.2) + tone(880, 2.0, 0.15) + tone(1320, 2.0, 0.1)
+    secs = detect_vocal_sections(v, inst + v)
+    covered = sum(min(s.end_s, 9) - max(s.start_s, 1) for s in secs if s.kind == "choir" and s.end_s > 1 and s.start_s < 9)
+    assert covered >= 7.0
+
+
+def test_digital_silence_next_to_short_section_makes_no_choir(tone, band_noise):
+    v, mix = _burst_song(tone, band_noise, 0.7)
+    mix[:, 3 * SR :] = 0  # 이후는 완전 무음
+    assert [s for s in detect_vocal_sections(v, mix, min_len_s=0.5) if s.start_s > 3.0] == []

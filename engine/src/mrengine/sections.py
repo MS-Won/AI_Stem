@@ -15,8 +15,10 @@ from mrengine.audio_io import SR
 from mrengine.spectral import HOP, N_FFT, frame_times, stft
 
 V_RATIO_THRESHOLD = 0.25      # 프레임의 보컬/믹스 에너지 비가 이 값 초과면 보컬 활성
-BANDWIDTH_RATIO = 1.5         # 대역 폭이 곡 중앙값의 이 배수 이상이면 choir
-FLATNESS_THRESHOLD = 0.3      # 스펙트럼 평탄도가 이 값 이상이면 choir
+CHOIR_ABS_WIDTH_HZ = 3000.0   # 대역 폭이 이 값 이상이면 곡과 무관하게 choir (합창 위주 곡 대비)
+CHOIR_WIDTH_RATIO = 1.5       # 대역 폭이 곡 기준 폭의 이 배수 이상이면 choir
+REF_WIDTH_PERCENTILE = 20     # 곡 기준 폭 = 활성 프레임 폭의 이 백분위 (중앙값은 합창 위주 곡에서 올라가 버린다)
+CHOIR_FLATNESS_THRESHOLD = 0.3  # 스펙트럼 평탄도가 이 값 이상이면 choir
 BAND_LO_HZ = 200.0
 BAND_HI_HZ = 8000.0
 ENERGY_FRACTION = 0.8         # 대역 폭 = 보컬 에너지의 이 비율이 들어가는 최소 주파수 폭
@@ -70,8 +72,12 @@ def detect_vocal_sections(vocals: np.ndarray, mix: np.ndarray, min_len_s: float 
     freqs = np.fft.rfftfreq(N_FFT, 1 / SR)
     band = (freqs >= BAND_LO_HZ) & (freqs <= BAND_HI_HZ)
     width, flat = _bandwidth_and_flatness(pv[:, band, :].sum(0))
-    median_width = np.median(width[active])
-    choir = (width >= BANDWIDTH_RATIO * median_width) | (flat >= FLATNESS_THRESHOLD)
+    ref_width = np.percentile(width[active], REF_WIDTH_PERCENTILE)
+    wide = width >= CHOIR_ABS_WIDTH_HZ
+    if ref_width > 0:
+        wide |= width >= CHOIR_WIDTH_RATIO * ref_width
+    # 비활성 프레임의 폭·평탄도는 의미 없으므로 평활 전에 제외한다
+    choir = active & (wide | (flat >= CHOIR_FLATNESS_THRESHOLD))
     choir = median_filter(choir.astype(np.uint8), size=win, mode="nearest").astype(bool)
 
     label = np.zeros(n_frames, dtype=np.int8)  # 0 없음, 1 lead, 2 choir
