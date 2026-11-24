@@ -26,3 +26,7 @@ def band_noise():
         return x.astype(np.float32)[None, :]
 
     return make
+
+
+def rms(x: np.ndarray) -> float:
+    return float(np.sqrt(np.mean(np.square(x, dtype=np.float64))))
