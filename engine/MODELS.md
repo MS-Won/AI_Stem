@@ -23,3 +23,18 @@ SDR은 목록이 보고하는 값이며 곡 품질 판정이 아니다(Task 9 �
 - 그래서 합창 복구의 재료 `|원곡 - 보컬|`이 반주 `|I|`와 거의 같아(합창 구간 차이 중앙값 -0.05 ~ -0.8dB), strength=1.0에서도 스펙트럼 복구가 합창 구간 반주를 0.0~0.5dB(중앙값)밖에 키우지 못한다. 두 모델이 서로 다르게 판단한 만큼만 채울 수 있다.
 - min_mag 앙상블(보컬 추정을 더 작게 잡음)은 복구 여지가 약 2배지만 여전히 1dB 안팎이고 반주 자체가 얇아질 수 있다.
 - 청취 판정 결과와 선택한 조합은 Task 9 Step 4(사용자 청취) 후에 여기에 적는다.
+
+## 교체 후보 실험 (2026-11-25, `scripts/model_trial.py`)
+1차 청취에서 라이브 음원(유봉)의 baseline이 뮤트처럼 끊겨, 같은 지표로 후보를 비교했다. 라이선스는 모두 unknown — verify before commercial launch.
+
+| 파일 | 구조 | 목록 SDR | 끊김 수 (낡은 침대 / 유봉 / 새 #13) | 분리 시간 (4:34곡) |
+|---|---|---|---|---|
+| `model_bs_roformer_ep_317_sdr_12.9755.ckpt` (현재) | BS-RoFormer | inst 16.5 | 10 / 72 / 9 | 두 모델 합계 354초 |
+| `htdemucs_ft.yaml` (현재) | Demucs v4 | - | 8 / 40 / 9 | (위 합계에 포함) |
+| `melband_roformer_inst_v2.ckpt` | Mel-RoFormer (unwa) | inst 16.1 | 9 / 68 / 8 | 236초 |
+| `melband_roformer_instvox_duality_v2.ckpt` | Mel-RoFormer (unwa) | inst 16.1 | 9 / 69 / 8 | 194초 |
+| `MDX23C-8KFFT-InstVoc_HQ.ckpt` | MDX23C | inst 15.8 | 8 / 59 / 6 | 181초 |
+| Gaudio Studio (비교 기준) | - | - | 9 / 25 / 4 | - |
+
+- 어떤 후보도 라이브 끊김을 Gaudio 수준으로 줄이지 못했다. 현재 DEFAULT_MODELS는 유지한다.
+- 끊김 = 0.1초 창에서 MR이 주변 2초 중앙값보다 12dB 이상 꺼지고 원곡은 3dB 이내인 곳. 결과표는 `out/phase0/model_trial.md`.

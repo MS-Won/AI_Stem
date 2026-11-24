@@ -1,7 +1,7 @@
 # 현재 상태
 
 - 브랜치: `phase0-engine`
-- 단계: Phase 0 (MR 엔진), **Task 9 Step 1~3·5 완료, Step 4(사용자 청취 판정) 대기** (아래 'Task 9 결과'). Task 8 완료 (`pipeline.py`: `run_pipeline`/`separate_all`/`PipelineConfig`, `stems` 인자로 분리 결과 재사용, `report.json`; `cli.py`; 스모크: 14번 곡 274초 스테레오, 총 658초(분리 360, 잔여 스캔 270, 나머지 약 28), GPU 최대 4355MiB(기준 1117 포함), 구간 53개/합창 29개, 합창 구간 평균 복구량 0.000~0.014로 작음, 잔여 구간 14개), Task 7 완료 (`residual.py`: `scan_and_reduce`가 MR을 재분리해 0.5초 창 RMS가 MR RMS 대비 -30dB를 넘는 구간만 `mr - 0.8*보컬`로 감쇄(0.1초 페이드), `ResidualSpan` 반환), Task 6 완료 (`loudness.py`: `restore_section_loudness` 앞뒤 3초 기준 비율로 choir 구간 게인(0~6dB, 0.2초 램프), `finalize` 피크 -1dBFS 정규화), Task 5 완료 (`restore.py`: `restore_choir`, choir 구간만 믹스-보컬 나머지로 복구, 경계 0.1초 램프, 칸별 |I'|<=|M| 클램프(`restore_choir_bins`), 채널별 처리로 메모리 절감), Task 4 완료 (구간 검출 `sections.py`: `detect_vocal_sections`, `frames_mask`; 합창 판정은 절대 폭 3kHz OR 하위 20% 백분위 기준 1.5배 OR 평탄도) — Task 3까지: STFT/앙상블(Task 2)에 이어 분리 백엔드(`separate.py`: `AudioSeparatorBackend`, `normalize_stems`, `DEFAULT_MODELS` 2개, `MODEL_DIR`)와 `engine/MODELS.md`(라이선스 일부 unknown, 상업 출시 전 확인)
+- 단계: Phase 0 (MR 엔진), **Task 9 Step 1~3·5 완료, Step 4 1차 판정 완료(2026-11-25), 새 #13 청취와 라이브 대응 결정 대기** (아래 'Task 9 결과'). Task 8 완료 (`pipeline.py`: `run_pipeline`/`separate_all`/`PipelineConfig`, `stems` 인자로 분리 결과 재사용, `report.json`; `cli.py`; 스모크: 14번 곡 274초 스테레오, 총 658초(분리 360, 잔여 스캔 270, 나머지 약 28), GPU 최대 4355MiB(기준 1117 포함), 구간 53개/합창 29개, 합창 구간 평균 복구량 0.000~0.014로 작음, 잔여 구간 14개), Task 7 완료 (`residual.py`: `scan_and_reduce`가 MR을 재분리해 0.5초 창 RMS가 MR RMS 대비 -30dB를 넘는 구간만 `mr - 0.8*보컬`로 감쇄(0.1초 페이드), `ResidualSpan` 반환), Task 6 완료 (`loudness.py`: `restore_section_loudness` 앞뒤 3초 기준 비율로 choir 구간 게인(0~6dB, 0.2초 램프), `finalize` 피크 -1dBFS 정규화), Task 5 완료 (`restore.py`: `restore_choir`, choir 구간만 믹스-보컬 나머지로 복구, 경계 0.1초 램프, 칸별 |I'|<=|M| 클램프(`restore_choir_bins`), 채널별 처리로 메모리 절감), Task 4 완료 (구간 검출 `sections.py`: `detect_vocal_sections`, `frames_mask`; 합창 판정은 절대 폭 3kHz OR 하위 20% 백분위 기준 1.5배 OR 평탄도) — Task 3까지: STFT/앙상블(Task 2)에 이어 분리 백엔드(`separate.py`: `AudioSeparatorBackend`, `normalize_stems`, `DEFAULT_MODELS` 2개, `MODEL_DIR`)와 `engine/MODELS.md`(라이선스 일부 unknown, 상업 출시 전 확인)
 
 ## 다음 할 일
 1. (완료) Task 1, 2, 3
@@ -10,7 +10,29 @@
 4. (완료) Task 6
 5. (완료) Task 7
 6. (완료) Task 8
-7. Task 9: Step 1~3, 5 완료. 3곡 청취 파일 재생성 완료(2026-11-24, 최종 리뷰 수정 반영). 남은 것: (b) Gaudio 결과를 `Test AR/gaudio/`에 넣고 `cd engine && .venv/Scripts/python scripts/phase0_batch.py --songs "../Test AR" --out out/phase0 --reuse` (곡당 수 초), (c) 사용자 청취 판정(Step 4, `engine/out/phase0/listening_sheet.md`) → 분기(Step 6)
+7. Task 9: Step 1~3, 5 완료. Step 4 1차 청취 판정 완료(2026-11-25, 아래 '1차 청취 판정'). 분리 모델 교체 실험 완료(아래 '모델 교체 실험'): **후보 모델로는 라이브 끊김이 해결되지 않음.** 남은 것:
+   - (a) 사용자: 새 #13 청취 (Gaudio 포함 청취표 재생성 완료), 원하면 유봉의 `model_trial/*.mp3` 모델별 비교 청취
+   - (b) 라이브 대응 방향 결정 → Step 6. 선택지: ① 끊김 보정 단계 추가(아래 제안), ② 라이브는 범위 밖, ③ 다른 모델 더 찾기
+
+## 1차 청취 판정 (2026-11-25)
+- 낡은 침대를 타고: **만족**.
+- 소리도둑 유봉(라이브 실황 음원): **불만족**. baseline이 많이 깨지고, restored는 커졌지만 중간중간 뮤트처럼 들리는 곳이 많음.
+  - 원인 조사: 분리 모델이 원인. 0.1초 짧은 끊김(주변 2초보다 12dB 이상 꺼짐, 원곡은 3dB 이내) 수: Gaudio 25, RoFormer 72, htdemucs 40, avg(baseline) 53, restored 46. 잔여 스캔 구간과 겹치지 않음. 낡은 침대는 모두 8~10개로 Gaudio(9)와 같음.
+  - 전체 -7.1dB는 `finalize_pair` 피크 처리(restored +6dB 구간 때문)로 곡 전체 균일 → 뮤트 원인 아님.
+  - 앙상블 바꾸기: max_mag 끊김 38(Gaudio 25보다 많음), 보컬 큰 창에서 MR +1.8dB(누출 증가) → 근본 해결 아님.
+  - 조사 스크립트는 세션 임시 폴더에만 있음 (dips2.py/ens_test.py의 지표: 0.1초 RMS, 21창 중앙값 대비 -12dB, 원곡 지역 변화 > -3dB).
+- Do You Hear the People Sing: 이전 AR은 차이 구분 불가 → 사용자가 AR을 교체함. 이전 원곡·출력·Gaudio 사본 삭제. 새 AR(01:53 스테레오, 합창 13개/71초, 총 406초 처리) 청취 대기, Gaudio 결과 아직 없음.
+- 새 #13은 Gaudio 결과까지 넣어 청취표를 다시 만들었다(대표 구간 restored-baseline +1.6/+2.0/+2.6dB). 청취 대기.
+
+## 모델 교체 실험 (2026-11-25, `engine/scripts/model_trial.py`)
+- 결과표 `engine/out/phase0/model_trial.md`, 모델별 청취 파일 `engine/out/phase0/<곡>/model_trial/<모델>.mp3`. 후보 분리 결과는 `stems_cache/`에 저장되어 재사용된다.
+- 후보: Mel-Band RoFormer Inst V2(unwa), InstVoc Duality V2(unwa), MDX23C InstVoc HQ. 기존 BS-RoFormer 1297, htdemucs_ft와 Gaudio를 같은 지표로 비교.
+- 끊김 수(적을수록 좋음): 유봉 RoFormer 72 / htdemucs 40 / Inst V2 68 / Duality V2 69 / MDX23C 59 / **Gaudio 25**. 낡은 침대는 모두 8~10(Gaudio 9). 새 #13은 6~9(Gaudio 4).
+- 결론: 공개 후보 모델 중 라이브 음원 끊김을 Gaudio 수준으로 줄이는 것은 없다. htdemucs가 여전히 가장 적다(40). MDX23C가 RoFormer 계열보다 조금 낫다(59).
+- 관찰: Gaudio는 유봉에서 오히려 더 얇다(두께 -10.3dB, 우리 모델 -6.9~-8.5dB). 즉 Gaudio는 반주를 더 남기는 게 아니라 **시간 방향으로 매끄럽게** 뺀다. 끊김은 '반주를 덜 뺐느냐'가 아니라 '갑자기 꺼지느냐'의 문제다.
+- 누출 지표(htdemucs로 재분리한 보컬/MR)는 판정 모델 자기 편향이 크다(htdemucs 자신 -64/-53dB인데 유봉에선 -27dB). 참고용으로만 쓴다.
+- 제안 ①(설계 변경이라 사용자 결정 필요): 끊김 보정 단계. 0.1초 단위로 MR이 주변보다 갑자기 꺼지는 곳을 찾아, 그 칸만 다른 모델 결과(앙상블의 max 쪽)나 원곡-보컬 재료로 메운다. A1(원곡 크기 이하)은 지킬 수 있지만 보컬이 같이 들어올 위험(A2)이 있어 청취 확인이 필요하다.
+- Gaudio 파일은 `Test AR/gaudio/<원곡 이름> (Gaudio).mp3`로 둔다. `Test AR/` 바로 아래에 두면 배치가 곡으로 처리해 분리를 돌린다. 원본 다운로드는 `Test AR/gaudio/_orig/`.
 
 전체 목록은 `todo.md`, 계획은 `docs/superpowers/plans/2026-11-24-phase0-mr-engine.md`.
 

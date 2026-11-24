@@ -12,7 +12,9 @@
   - [x] Step 1: `engine/scripts/phase0_batch.py` (분리 캐시 stems_cache/*.npy, 탐색 조합은 잔여 스캔 생략(`PipelineConfig.residual=False`), 최종 조합만 잔여 스캔, compare.png, 한국어 listening_sheet.md, `--reuse`) + 진단 스크립트 `phase0_diagnose.py`
   - [x] Step 2: 3곡 실행 (곡별 시간은 docs/STATE.md). 최종 리뷰 수정 후 3곡 모두 곡별 실행으로 재생성 완료
   - [x] Step 3: 검출 임계값 1차 조정 (V_RATIO 0.25→0.12, 활성 평활 0.5→1.5초, choir 평활 4초 분리, 폭 배수 1.5→1.4. 합창 구간 수 14/29/53 → 16/22/13, 조각 구간 감소). 전체 58 passed
-  - [ ] Step 4: 사용자 청취 판정 (Gaudio 파일 필요, 컨트롤러가 진행)
+  - [ ] Step 4: 사용자 청취 판정 — 1차 완료(낡은 침대 만족, 유봉 라이브 불만족: 분리 모델 끊김, #13은 AR 교체). 남은 것: 새 #13 청취 + Gaudio
+  - [x] 분리 모델 교체 실험 (`scripts/model_trial.py`, 후보 3개. 라이브 끊김 해결 못 함: 유봉 59~72 vs Gaudio 25, htdemucs 40)
+  - [ ] 라이브 음원 대응 결정: ① 끊김 보정 단계 추가 ② 라이브는 범위 밖 ③ 다른 모델 더 찾기 (docs/STATE.md '모델 교체 실험')
   - [x] Step 5: 커밋
   - [ ] Step 6: 판정에 따른 분기
 
