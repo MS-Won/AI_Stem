@@ -30,3 +30,15 @@ def band_noise():
 
 def rms(x: np.ndarray) -> float:
     return float(np.sqrt(np.mean(np.square(x, dtype=np.float64))))
+
+
+def band_rms(x: np.ndarray, start_s: float, end_s: float, freq_hz: float, width_hz: float = 100) -> float:
+    """[start_s, end_s) 프레임에서 freq_hz 주변 대역의 STFT 크기 RMS."""
+    from mrengine.spectral import N_FFT, frame_times, stft
+
+    mag = np.abs(stft(x))
+    t = frame_times(mag.shape[-1])
+    f = np.fft.rfftfreq(N_FFT, 1 / SR)
+    fsel = (f >= freq_hz - width_hz / 2) & (f <= freq_hz + width_hz / 2)
+    tsel = (t >= start_s) & (t < end_s)
+    return rms(mag[:, fsel][:, :, tsel])
