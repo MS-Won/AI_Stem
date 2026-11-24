@@ -1,10 +1,10 @@
 # 현재 상태
 
 - 브랜치: `phase0-engine`
-- 단계: Phase 0 (MR 엔진), **Task 2 완료** — STFT 공통 함수(`spectral.py`: N_FFT=4096, HOP=1024, `frame_times`)와 앙상블(`ensemble.py`)
+- 단계: Phase 0 (MR 엔진), **Task 3 완료** — STFT/앙상블(Task 2)에 이어 분리 백엔드(`separate.py`: `AudioSeparatorBackend`, `normalize_stems`, `DEFAULT_MODELS` 2개, `MODEL_DIR`)와 `engine/MODELS.md`(라이선스 일부 unknown, 상업 출시 전 확인)
 
 ## 다음 할 일
-1. (완료) Task 1, Task 2
-2. Task 3: 분리 백엔드
+1. (완료) Task 1, 2, 3
+2. Task 4: 보컬·합창 구간 검출
 
 전체 목록은 `todo.md`, 계획은 `docs/superpowers/plans/2026-11-24-phase0-mr-engine.md`.
