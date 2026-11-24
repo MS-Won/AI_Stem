@@ -1,0 +1,11 @@
+Metadata-Version: 2.4
+Name: mrengine
+Version: 0.1.0
+Summary: 합창을 인식하는 MR(반주) 생성 엔진
+Requires-Python: >=3.12
+Requires-Dist: numpy
+Requires-Dist: scipy
+Requires-Dist: soundfile
+Requires-Dist: matplotlib
+Provides-Extra: gpu
+Requires-Dist: audio-separator[gpu]; extra == "gpu"
