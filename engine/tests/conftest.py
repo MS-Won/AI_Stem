@@ -32,6 +32,12 @@ def rms(x: np.ndarray) -> float:
     return float(np.sqrt(np.mean(np.square(x, dtype=np.float64))))
 
 
+def rms_db(x: np.ndarray, start_s: float, end_s: float) -> float:
+    """[start_s, end_s) 샘플 구간의 전 채널 RMS (dB)."""
+    seg = x[..., int(round(start_s * SR)) : int(round(end_s * SR))]
+    return 20 * float(np.log10(rms(seg) + 1e-12))
+
+
 def band_rms(x: np.ndarray, start_s: float, end_s: float, freq_hz: float, width_hz: float = 100) -> float:
     """[start_s, end_s) 프레임에서 freq_hz 주변 대역의 STFT 크기 RMS."""
     from mrengine.spectral import N_FFT, frame_times, stft
