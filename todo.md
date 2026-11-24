@@ -10,7 +10,7 @@
 - [x] Task 8: 파이프라인, report.json, CLI (FakeSeparator 테스트 7개 통과, 전체 55 passed. separate_all/stems 재사용(R4)으로 분리 1회만 호출 확인. 실제 곡 14번(274초 스테레오) 스모크: 5개 파일 생성, 구간 53개(합창 29), 총 658초, GPU 최대 4355MiB(기준 1117 포함). 합창 구간 평균 복구량이 0.000~0.014로 매우 작음, 잔여 스캔이 270초로 가장 느림 -> Task 9에서 조정)
 - [ ] Task 9: Phase 0 일괄 처리, 비교 자료, 청취 판정
   - [x] Step 1: `engine/scripts/phase0_batch.py` (분리 캐시 stems_cache/*.npy, 탐색 조합은 잔여 스캔 생략(`PipelineConfig.residual=False`), 최종 조합만 잔여 스캔, compare.png, 한국어 listening_sheet.md, `--reuse`) + 진단 스크립트 `phase0_diagnose.py`
-  - [x] Step 2: 3곡 실행 (곡별 시간은 docs/STATE.md). 단, 재실행 중 메모리 부족으로 중단되어 2·3번 곡 출력은 `--reuse`로 다시 만들어야 함
+  - [x] Step 2: 3곡 실행 (곡별 시간은 docs/STATE.md). 최종 리뷰 수정 후 3곡 모두 곡별 실행으로 재생성 완료
   - [x] Step 3: 검출 임계값 1차 조정 (V_RATIO 0.25→0.12, 활성 평활 0.5→1.5초, choir 평활 4초 분리, 폭 배수 1.5→1.4. 합창 구간 수 14/29/53 → 16/22/13, 조각 구간 감소). 전체 58 passed
   - [ ] Step 4: 사용자 청취 판정 (Gaudio 파일 필요, 컨트롤러가 진행)
   - [x] Step 5: 커밋

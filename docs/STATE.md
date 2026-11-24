@@ -10,7 +10,7 @@
 4. (완료) Task 6
 5. (완료) Task 7
 6. (완료) Task 8
-7. Task 9: Step 1~3, 5 완료. 남은 것: (a) 2·3번 곡 출력 다시 만들기 `cd engine && .venv/Scripts/python scripts/phase0_batch.py --songs "../Test AR" --out out/phase0 --reuse` (분리 캐시 있음, 약 13분), (b) Gaudio 결과를 `Test AR/gaudio/`에 넣고 같은 명령 재실행, (c) 사용자 청취 판정(Step 4) → 분기(Step 6)
+7. Task 9: Step 1~3, 5 완료. 3곡 청취 파일 재생성 완료(2026-11-24, 최종 리뷰 수정 반영). 남은 것: (b) Gaudio 결과를 `Test AR/gaudio/`에 넣고 `cd engine && .venv/Scripts/python scripts/phase0_batch.py --songs "../Test AR" --out out/phase0 --reuse` (곡당 수 초), (c) 사용자 청취 판정(Step 4, `engine/out/phase0/listening_sheet.md`) → 분기(Step 6)
 
 전체 목록은 `todo.md`, 계획은 `docs/superpowers/plans/2026-11-24-phase0-mr-engine.md`.
 
@@ -47,5 +47,5 @@
 
 ## 최종 리뷰 반영 (2026-11-24)
 - 전체 브랜치 최종 리뷰 결과: 중요 2건 수정. (1) audio-separator(MDXC)가 입력 피크를 1로 줄이고 되돌리지 않아, 피크가 1을 넘는 음량 보정 MR의 잔여 스캔이 어긋남 -> `AudioSeparatorBackend.separate`가 입력을 피크 0.9 이하로 낮추고 나온 스템에 같은 배율을 곱함. (2) 음량 보정은 원곡 음량 흐름을 따르므로 원곡보다 반주가 커질 수 있음 -> 청취표 문구 정정, report.json에 `final_gain_db`와 `constants` 추가. 코드 동작은 스펙 §5[5]대로 유지.
-- 청취 파일은 수정 후 다시 만들어야 한다 (유봉 분리 캐시 포함).
+- 청취 파일 재생성 완료 (곡별로 따로 실행해 메모리 부족 회피: #13 346초, 낡은 침대 505초, 유봉 881초(분리 361 포함)). 청취표 대표 구간 restored-baseline: #13 +0.2/+2.3/+3.4dB, 낡은 침대 +2.4/+2.3/+1.6dB, 유봉 -0.0/-0.5/+6.0dB. 스펙트럼 복구량은 여전히 0.3~2.1%.
 - Phase 1 워커 준비 수치 (RTX 3060): 곡당 RAM 2~3GB, 곡당 8~11분(분리+최종), 잔여 스캔이 약 45%. 진입 조건은 todo.md 참고.
