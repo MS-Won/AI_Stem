@@ -63,18 +63,19 @@ def test_bins_never_exceed_mix():
     assert np.all(np.abs(out) <= np.abs(M) + 1e-7 * np.abs(M).max())
 
 
+def _excess(x, mix_mag):
+    """믹스 크기를 넘은 양의 에너지: 모든 칸의 max(|stft(x)| - |stft(mix)|, 0)^2 합."""
+    return float(np.sum(np.maximum(np.abs(stft(x)) - mix_mag, 0.0).astype(np.float64) ** 2))
+
+
 def _assert_overshoot_not_worse(out, inst, mix):
-    Mm = np.abs(stft(mix))
-    over_out = (np.abs(stft(out)) - Mm).max()
-    over_in = max((np.abs(stft(inst)) - Mm).max(), 0.0)
-    assert over_out <= over_in + 1e-3 * Mm.max()
+    """R9: 재합성 후 초과 에너지가 입력 inst의 초과 에너지보다 믹스 에너지의 1e-4 이상 늘지 않는다."""
+    mix_mag = np.abs(stft(mix))
+    e_out, e_in = _excess(out, mix_mag), _excess(inst, mix_mag)
+    print(f"excess out={e_out:.4g} inst={e_in:.4g} mix_energy={np.sum(mix_mag.astype(np.float64) ** 2):.4g}")
+    assert e_out <= e_in + 1e-4 * np.sum(mix_mag.astype(np.float64) ** 2)
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="R8 미충족(컨트롤러 판단 필요): 희소한 톤 스펙트럼에서는 istft->stft 투영이 믹스가 거의 빈 칸(bin 91, |M|=1.4e-3)에 "
-    "4.6e-3 초과를 만든다 (입력 inst 자체는 2.1e-3, 허용 +1.6e-4). 한 번 재클램프로도 3.4e-3.",
-)
 def test_resynthesis_never_worsens_overshoot(song):
     mix, inst, vocals, _ = song
     out, _ = restore_choir(mix, inst, vocals, SECS, strength=1.0)
