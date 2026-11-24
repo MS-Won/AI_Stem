@@ -94,10 +94,20 @@ def test_mostly_choir_song_detects_choir(tone, band_noise):
     assert covered >= 7.0
 
 
-def test_digital_silence_next_to_short_section_makes_no_choir(tone, band_noise):
-    v, mix = _burst_song(tone, band_noise, 0.7)
-    mix[:, 3 * SR :] = 0  # 이후는 완전 무음
-    assert [s for s in detect_vocal_sections(v, mix, min_len_s=0.5) if s.start_s > 3.0] == []
+def test_digital_silence_next_to_short_section_makes_no_choir(tone):
+    """완전 무음 프레임은 평탄도가 1로 계산돼 'choir 같은' 값이 나온다. 활성 프레임만 choir로 판정하지
+    않으면, 무음 바로 앞의 lead 구간이 choir 평활(4초)에 끌려 choir로 바뀐다 (T9 리뷰: 버스트는 평활을
+    통과하는 2.5초)."""
+    inst = tone(200, 8.0, 0.1)
+    v = np.zeros_like(inst)
+    a, b = 2 * SR, int(4.5 * SR)
+    v[:, a:b] = tone(440, 2.5, 0.3) + tone(880, 2.5, 0.15)  # 좁은 대역 = lead
+    mix = inst + v
+    mix[:, b:] = 0  # 버스트 뒤는 완전 무음
+    secs = detect_vocal_sections(v, mix, min_len_s=0.5)
+    assert any(s.kind == "lead" and s.start_s < 3.0 and s.end_s > 4.0 for s in secs)  # 버스트는 lead로 검출
+    assert [s for s in secs if s.kind == "choir"] == []
+    assert [s for s in secs if s.start_s > 4.5] == []
 
 
 def test_choir_with_brief_narrow_moments_stays_one_section(tone, band_noise):

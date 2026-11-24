@@ -11,6 +11,7 @@
 from __future__ import annotations
 
 import argparse
+import gc
 import json
 import time
 from pathlib import Path
@@ -42,6 +43,25 @@ def combo_name(strength: float, method: str) -> str:
     return f"s{strength:.1f}_{method}"
 
 
+def _save_atomic(path: Path, x: np.ndarray) -> None:
+    """중간에 죽어도 반쯤 쓴 .npy가 캐시로 읽히지 않도록 임시 파일에 쓴 뒤 이름을 바꾼다."""
+    tmp = path.with_name(path.name + ".tmp")
+    with open(tmp, "wb") as f:
+        np.save(f, x.astype(np.float32))
+    tmp.replace(path)
+
+
+def _free_memory() -> None:
+    """곡 사이에 큰 배열과 GPU 캐시를 놓아 준다 (3곡 연속 실행에서 메모리 부족으로 중단된 적 있음)."""
+    gc.collect()
+    try:
+        import torch
+    except ImportError:
+        return
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+
+
 def load_or_separate(mix: np.ndarray, song_dir: Path, models: list[str]) -> tuple[list[Stems], float]:
     """모델별 분리 결과를 캐시에서 읽거나, 없으면 분리해서 저장한다. -> (stems, 분리에 쓴 초)"""
     stems: list[Stems] = []
@@ -50,16 +70,19 @@ def load_or_separate(mix: np.ndarray, song_dir: Path, models: list[str]) -> tupl
         d = song_dir / "stems_cache" / m
         fv, fi = d / "vocals.npy", d / "instrumental.npy"
         if fv.exists() and fi.exists():
-            stems.append(Stems(vocals=np.load(fv), instrumental=np.load(fi)))
-            continue
+            cached = Stems(vocals=np.load(fv), instrumental=np.load(fi))
+            # 원곡이 바뀌었거나 저장이 깨진 캐시는 쓰지 않고 다시 분리한다
+            if cached.vocals.shape == cached.instrumental.shape == mix.shape:
+                stems.append(cached)
+                continue
         t0 = time.perf_counter()
         sep = AudioSeparatorBackend(m, MODEL_DIR, song_dir / "_work")
         st = sep.separate(mix)
         del sep
         spent += time.perf_counter() - t0
         d.mkdir(parents=True, exist_ok=True)
-        np.save(fv, st.vocals.astype(np.float32))
-        np.save(fi, st.instrumental.astype(np.float32))
+        _save_atomic(fv, st.vocals)
+        _save_atomic(fi, st.instrumental)
         stems.append(st)
     return stems, spent
 
@@ -231,8 +254,9 @@ def write_listening_sheet(path: Path, summaries: list[dict], songs_dir: Path) ->
          "",
          "## 먼저 알아 둘 점 (측정 결과)",
          "- 엔진의 '빈 주파수 채우기'(스펙트럼 복구)는 지금 모델 조합에서 거의 효과가 없습니다. 강도를 최대(1.0)로 해도",
-         "  합창 구간 반주가 대부분 1dB도 안 커집니다. 분리 모델이 '반주 = 원곡 - 보컬'로 만들기 때문에,",
-         "  원곡에서 보컬을 뺀 재료로는 더 채울 것이 남지 않습니다.",
+         "  합창 구간 반주가 대부분 1dB도 안 커집니다. 주 분리 모델(BS-RoFormer)의 반주가 3곡 중 2곡(#13, 낡은 침대)에서",
+         "  사실상 '원곡 - 보컬'이고(유봉은 약 -12dB 차이로 덜하지만 채울 여지는 역시 1dB 안팎),",
+         "  원곡에서 보컬을 뺀 재료로는 더 채울 것이 거의 남지 않습니다.",
          "- 그래서 baseline과 restored의 차이는 대부분 '음량 보정'(합창 구간 반주를 주변 수준까지 최대 +6dB 올림)과",
          "  '잔여 보컬 제거'에서 나옵니다. 아래 표의 'restored-baseline' 칸이 그 구간의 실제 차이입니다.",
          "- 따라서 이번 청취의 핵심 질문은 \"restored가 Gaudio보다 꽉 차게 들리는가\"이고,",
@@ -313,6 +337,7 @@ def main(argv: list[str] | None = None) -> int:
         s = process_song(song, args.songs, args.out, models, combos, final, args.cache_only, args.reuse)
         print(f"   {json.dumps(s['timing_s'])}", flush=True)
         summaries.append(s)
+        _free_memory()
     if not args.cache_only:
         write_listening_sheet(args.out / "listening_sheet.md", summaries, args.songs)
         print(f"청취표: {(args.out / 'listening_sheet.md').resolve()}")
