@@ -14,15 +14,16 @@ from scipy.ndimage import median_filter
 from mrengine.audio_io import SR
 from mrengine.spectral import HOP, N_FFT, frame_times, stft
 
-V_RATIO_THRESHOLD = 0.25      # 프레임의 보컬/믹스 에너지 비가 이 값 초과면 보컬 활성
+V_RATIO_THRESHOLD = 0.12      # 프레임의 보컬/믹스 에너지 비가 이 값 초과면 보컬 활성 (T9: 0.25는 큰 합창+관현악에서 끊김)
 CHOIR_ABS_WIDTH_HZ = 3000.0   # 대역 폭이 이 값 이상이면 곡과 무관하게 choir (합창 위주 곡 대비)
-CHOIR_WIDTH_RATIO = 1.5       # 대역 폭이 곡 기준 폭의 이 배수 이상이면 choir
+CHOIR_WIDTH_RATIO = 1.4       # 대역 폭이 곡 기준 폭의 이 배수 이상이면 choir (T9: 1.5에서 조정)
 REF_WIDTH_PERCENTILE = 20     # 곡 기준 폭 = 활성 프레임 폭의 이 백분위 (중앙값은 합창 위주 곡에서 올라가 버린다)
 CHOIR_FLATNESS_THRESHOLD = 0.3  # 스펙트럼 평탄도가 이 값 이상이면 choir
 BAND_LO_HZ = 200.0
 BAND_HI_HZ = 8000.0
 ENERGY_FRACTION = 0.8         # 대역 폭 = 보컬 에너지의 이 비율이 들어가는 최소 주파수 폭
-MEDIAN_FILTER_S = 0.5
+MEDIAN_FILTER_S = 1.5         # 보컬 활성 평활 길이 (T9: 0.5초는 1초짜리 조각 구간을 많이 만듦)
+CHOIR_MEDIAN_FILTER_S = 4.0   # choir/lead 판정 평활 길이. 프레임 폭 판정이 흔들려 choir/lead가 1초 단위로 번갈아 나오던 것을 막는다 (T9)
 
 Kind = Literal["choir", "lead"]
 
@@ -78,7 +79,8 @@ def detect_vocal_sections(vocals: np.ndarray, mix: np.ndarray, min_len_s: float 
         wide |= width >= CHOIR_WIDTH_RATIO * ref_width
     # 비활성 프레임의 폭·평탄도는 의미 없으므로 평활 전에 제외한다
     choir = active & (wide | (flat >= CHOIR_FLATNESS_THRESHOLD))
-    choir = median_filter(choir.astype(np.uint8), size=win, mode="nearest").astype(bool)
+    cwin = max(1, int(round(CHOIR_MEDIAN_FILTER_S * SR / HOP)) | 1)
+    choir = median_filter(choir.astype(np.uint8), size=cwin, mode="nearest").astype(bool)
 
     label = np.zeros(n_frames, dtype=np.int8)  # 0 없음, 1 lead, 2 choir
     label[active] = np.where(choir[active], 2, 1)

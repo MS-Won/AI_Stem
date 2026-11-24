@@ -25,11 +25,19 @@ class PipelineConfig:
     max_gain_db: float = 6.0
     residual_threshold_db: float = -30.0
     write_mp3: bool = True
+    residual: bool = True  # False면 잔여 보컬 스캔(재분리, 가장 느림)을 건너뛴다. Phase 0 조합 탐색용
 
 
 def separate_all(mix: np.ndarray, separators: list[Separator]) -> list[Stems]:
     """분리기마다 한 번씩 분리한다. 결과를 캐시해 run_pipeline(stems=...)에 재사용할 수 있다."""
     return [s.separate(mix) for s in separators]
+
+
+def finalize_pair(baseline: np.ndarray, restored: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """두 MR을 같은 배율로 피크 처리한다. 따로 정규화하면 음량 보정으로 피크가 커진 restored만 통째로
+    작아져(실제 곡에서 최대 -6dB) 같은 시각의 A/B 비교가 음량 차이에 묻힌다."""
+    both = finalize(np.concatenate([baseline, restored], axis=0))
+    return both[: baseline.shape[0]], both[baseline.shape[0] :]
 
 
 def _section_amounts(sections, amount: np.ndarray) -> list[float]:
@@ -85,11 +93,13 @@ def run_pipeline(
     restored, gains = restore_section_loudness(restored, mix, sections, config.max_gain_db)
     lap("loudness")
 
-    restored, spans = scan_and_reduce(restored, separators[0], config.residual_threshold_db)
+    if config.residual:
+        restored, spans = scan_and_reduce(restored, separators[0], config.residual_threshold_db)
+    else:
+        spans = []
     lap("residual")
 
-    restored = finalize(restored)
-    baseline = finalize(baseline)
+    baseline, restored = finalize_pair(baseline, restored)
     write_wav(out_dir / "mr_baseline.wav", baseline)
     write_wav(out_dir / "mr_restored.wav", restored)
     if config.write_mp3:

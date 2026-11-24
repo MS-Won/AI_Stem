@@ -94,3 +94,27 @@ def test_reusing_stems_skips_separation(tmp_path, song):
     assert rep["models"] == ["a", "b"]
     # 잔여 스캔이 첫 분리기를 한 번 더 부르는 것 외에 재분리는 없다.
     assert seps[1].calls == 1 and seps[0].calls == 2
+
+
+def test_residual_disabled_skips_rescan(tmp_path, song):
+    path, seps = song()
+    stems = separate_all(load_audio(path), seps)
+    rep = run_pipeline(path, tmp_path / "o", seps, PipelineConfig(write_mp3=False, residual=False), stems=stems)
+    assert [s.calls for s in seps] == [1, 1]  # 잔여 스캔용 재분리가 없다
+    assert rep["residual_spans"] == []
+    assert rep["config"]["residual"] is False
+
+
+
+def test_finalize_pair_uses_one_scale_for_both():
+    """음량 보정으로 restored 피크만 커져도 두 파일을 같은 배율로 낮춰야 같은 시각 A/B 비교가 공정하다."""
+    from mrengine.pipeline import finalize_pair
+
+    base = np.full((2, 100), 0.5, dtype=np.float32)
+    rest = base.copy()
+    rest[:, 50:] = 2.0  # 보정된 구간
+    b, r = finalize_pair(base, rest)
+    assert b.shape == r.shape == (2, 100)
+    assert np.abs(r).max() <= 10 ** (-1 / 20) + 1e-6
+    np.testing.assert_allclose(r[:, :50], b[:, :50])  # 보정 밖은 그대로 같다
+    np.testing.assert_allclose(r[:, 50:] / b[:, 50:], 4.0, rtol=1e-6)

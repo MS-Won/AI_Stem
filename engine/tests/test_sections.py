@@ -77,9 +77,10 @@ def _burst_song(tone, band_noise, seconds):
 
 
 def test_min_len_drops_burst_that_survives_smoothing(tone, band_noise):
-    v, mix = _burst_song(tone, band_noise, 0.7)
-    assert detect_vocal_sections(v, mix, min_len_s=1.0) == []
-    kept = detect_vocal_sections(v, mix, min_len_s=0.5)
+    # T9에서 평활 길이를 늘려(활성 1.5초, choir 4초) 버스트를 2.5초로 키웠다.
+    v, mix = _burst_song(tone, band_noise, 2.5)
+    assert detect_vocal_sections(v, mix, min_len_s=3.0) == []
+    kept = detect_vocal_sections(v, mix, min_len_s=2.0)
     assert len(kept) == 1 and kept[0].kind == "choir"
 
 
@@ -97,3 +98,21 @@ def test_digital_silence_next_to_short_section_makes_no_choir(tone, band_noise):
     v, mix = _burst_song(tone, band_noise, 0.7)
     mix[:, 3 * SR :] = 0  # 이후는 완전 무음
     assert [s for s in detect_vocal_sections(v, mix, min_len_s=0.5) if s.start_s > 3.0] == []
+
+
+def test_choir_with_brief_narrow_moments_stays_one_section(tone, band_noise):
+    """실제 곡에서는 프레임 폭 판정이 흔들려 choir/lead가 1초 단위로 번갈아 나왔다(T9).
+    넓은 대역 0.8초 + 좁은 음 0.4초가 반복되는 8초 합창은 choir 구간 하나여야 한다."""
+    inst = tone(200, 12.0, 0.1)
+    v = np.zeros_like(inst)
+    t = 2.0
+    while t < 10.0 - 1e-9:
+        a = int(round(t * SR))
+        v[:, a : a + int(0.8 * SR)] = band_noise(300, 6000, 0.8, 0.5, seed=int(t * 10))
+        b = a + int(0.8 * SR)
+        v[:, b : b + int(0.4 * SR)] = tone(440, 0.4, 0.4)
+        t += 1.2
+    secs = detect_vocal_sections(v, inst + v)
+    choir = [s for s in secs if s.kind == "choir"]
+    assert len(choir) == 1
+    assert choir[0].start_s < 3.0 and choir[0].end_s > 9.0
