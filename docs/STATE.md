@@ -1,7 +1,7 @@
 # 현재 상태
 
 - 브랜치: `phase0-engine`
-- 단계: Phase 0 (MR 엔진), **Task 9 Step 1~3·5 완료, Step 4 1차 판정 완료(2026-11-25), 새 #13 청취와 라이브 대응 결정 대기** (아래 'Task 9 결과'). Task 8 완료 (`pipeline.py`: `run_pipeline`/`separate_all`/`PipelineConfig`, `stems` 인자로 분리 결과 재사용, `report.json`; `cli.py`; 스모크: 14번 곡 274초 스테레오, 총 658초(분리 360, 잔여 스캔 270, 나머지 약 28), GPU 최대 4355MiB(기준 1117 포함), 구간 53개/합창 29개, 합창 구간 평균 복구량 0.000~0.014로 작음, 잔여 구간 14개), Task 7 완료 (`residual.py`: `scan_and_reduce`가 MR을 재분리해 0.5초 창 RMS가 MR RMS 대비 -30dB를 넘는 구간만 `mr - 0.8*보컬`로 감쇄(0.1초 페이드), `ResidualSpan` 반환), Task 6 완료 (`loudness.py`: `restore_section_loudness` 앞뒤 3초 기준 비율로 choir 구간 게인(0~6dB, 0.2초 램프), `finalize` 피크 -1dBFS 정규화), Task 5 완료 (`restore.py`: `restore_choir`, choir 구간만 믹스-보컬 나머지로 복구, 경계 0.1초 램프, 칸별 |I'|<=|M| 클램프(`restore_choir_bins`), 채널별 처리로 메모리 절감), Task 4 완료 (구간 검출 `sections.py`: `detect_vocal_sections`, `frames_mask`; 합창 판정은 절대 폭 3kHz OR 하위 20% 백분위 기준 1.5배 OR 평탄도) — Task 3까지: STFT/앙상블(Task 2)에 이어 분리 백엔드(`separate.py`: `AudioSeparatorBackend`, `normalize_stems`, `DEFAULT_MODELS` 2개, `MODEL_DIR`)와 `engine/MODELS.md`(라이선스 일부 unknown, 상업 출시 전 확인)
+- 단계: Phase 0 (MR 엔진), **Task 9 Step 1~3·5 완료, Step 4 청취 판정 완료(2026-11-26 새 #13 만족), 라이브 대응 결정 대기** (아래 'Task 9 결과'). Task 8 완료 (`pipeline.py`: `run_pipeline`/`separate_all`/`PipelineConfig`, `stems` 인자로 분리 결과 재사용, `report.json`; `cli.py`; 스모크: 14번 곡 274초 스테레오, 총 658초(분리 360, 잔여 스캔 270, 나머지 약 28), GPU 최대 4355MiB(기준 1117 포함), 구간 53개/합창 29개, 합창 구간 평균 복구량 0.000~0.014로 작음, 잔여 구간 14개), Task 7 완료 (`residual.py`: `scan_and_reduce`가 MR을 재분리해 0.5초 창 RMS가 MR RMS 대비 -30dB를 넘는 구간만 `mr - 0.8*보컬`로 감쇄(0.1초 페이드), `ResidualSpan` 반환), Task 6 완료 (`loudness.py`: `restore_section_loudness` 앞뒤 3초 기준 비율로 choir 구간 게인(0~6dB, 0.2초 램프), `finalize` 피크 -1dBFS 정규화), Task 5 완료 (`restore.py`: `restore_choir`, choir 구간만 믹스-보컬 나머지로 복구, 경계 0.1초 램프, 칸별 |I'|<=|M| 클램프(`restore_choir_bins`), 채널별 처리로 메모리 절감), Task 4 완료 (구간 검출 `sections.py`: `detect_vocal_sections`, `frames_mask`; 합창 판정은 절대 폭 3kHz OR 하위 20% 백분위 기준 1.5배 OR 평탄도) — Task 3까지: STFT/앙상블(Task 2)에 이어 분리 백엔드(`separate.py`: `AudioSeparatorBackend`, `normalize_stems`, `DEFAULT_MODELS` 2개, `MODEL_DIR`)와 `engine/MODELS.md`(라이선스 일부 unknown, 상업 출시 전 확인)
 
 ## 다음 할 일
 1. (완료) Task 1, 2, 3
@@ -11,7 +11,7 @@
 5. (완료) Task 7
 6. (완료) Task 8
 7. Task 9: Step 1~3, 5 완료. Step 4 1차 청취 판정 완료(2026-11-25, 아래 '1차 청취 판정'). 분리 모델 교체 실험 완료(아래 '모델 교체 실험'): **후보 모델로는 라이브 끊김이 해결되지 않음.** 남은 것:
-   - (a) 사용자: 새 #13 청취 (Gaudio 포함 청취표 재생성 완료), 원하면 유봉의 `model_trial/*.mp3` 모델별 비교 청취
+   - (a) (완료, 2026-11-26) 새 #13 청취: **만족**. 원하면 유봉의 `model_trial/*.mp3` 모델별 비교 청취
    - (b) 라이브 대응 방향 결정 → Step 6. 선택지: ① 끊김 보정 단계 추가(아래 제안), ② 라이브는 범위 밖, ③ 다른 모델 더 찾기
 
 ## 1차 청취 판정 (2026-11-25)
@@ -22,7 +22,7 @@
   - 앙상블 바꾸기: max_mag 끊김 38(Gaudio 25보다 많음), 보컬 큰 창에서 MR +1.8dB(누출 증가) → 근본 해결 아님.
   - 조사 스크립트는 세션 임시 폴더에만 있음 (dips2.py/ens_test.py의 지표: 0.1초 RMS, 21창 중앙값 대비 -12dB, 원곡 지역 변화 > -3dB).
 - Do You Hear the People Sing: 이전 AR은 차이 구분 불가 → 사용자가 AR을 교체함. 이전 원곡·출력·Gaudio 사본 삭제. 새 AR(01:53 스테레오, 합창 13개/71초, 총 406초 처리) 청취 대기, Gaudio 결과 아직 없음.
-- 새 #13은 Gaudio 결과까지 넣어 청취표를 다시 만들었다(대표 구간 restored-baseline +1.6/+2.0/+2.6dB). 청취 대기.
+- 새 #13은 Gaudio 결과까지 넣어 청취표를 다시 만들었다(대표 구간 restored-baseline +1.6/+2.0/+2.6dB). 2026-11-26 청취: **만족**.
 
 ## 모델 교체 실험 (2026-11-25, `engine/scripts/model_trial.py`)
 - 결과표 `engine/out/phase0/model_trial.md`, 모델별 청취 파일 `engine/out/phase0/<곡>/model_trial/<모델>.mp3`. 후보 분리 결과는 `stems_cache/`에 저장되어 재사용된다.
