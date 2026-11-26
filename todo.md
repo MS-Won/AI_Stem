@@ -1,8 +1,8 @@
 # 할 일
 
-## Phase 1 웹 MVP (최대 2주, main 병합일부터) — `docs/superpowers/specs/2026-11-26-ms-audio-org-design.md` §8
+## Phase 1 웹 MVP (2026-11-26 ~ 2026-12-10) — `docs/superpowers/specs/2026-11-26-ms-audio-org-design.md` §8
 - [x] 0단계: 운영 체계 (docs/company, 에이전트 5개, CLAUDE.md 규칙, 첫 보고서)
-  - [ ] phase0-engine → main 병합·push (대표 허용 대기)
+  - [x] phase0-engine → main 병합·push (2026-11-26)
   - [ ] 평일 아침 푸시 알림 예약 (GitHub 연결 대기)
 - [ ] 1단계 디자인팀: 브랜드 기초 + 시안 3개 → 대표 승인
 - [ ] 2단계 개발팀: web/ 뼈대, Supabase 스키마, 소셜 로그인, RLS, 업로드
