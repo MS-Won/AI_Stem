@@ -1,7 +1,7 @@
 # 현재 상태
 
 - 브랜치: `phase0-engine`
-- 단계: Phase 0 (MR 엔진), **Task 9 Step 1~3·5 완료, Step 4 청취 판정 완료(2026-11-26 새 #13 만족), 라이브 대응 결정 대기** (아래 'Task 9 결과'). Task 8 완료 (`pipeline.py`: `run_pipeline`/`separate_all`/`PipelineConfig`, `stems` 인자로 분리 결과 재사용, `report.json`; `cli.py`; 스모크: 14번 곡 274초 스테레오, 총 658초(분리 360, 잔여 스캔 270, 나머지 약 28), GPU 최대 4355MiB(기준 1117 포함), 구간 53개/합창 29개, 합창 구간 평균 복구량 0.000~0.014로 작음, 잔여 구간 14개), Task 7 완료 (`residual.py`: `scan_and_reduce`가 MR을 재분리해 0.5초 창 RMS가 MR RMS 대비 -30dB를 넘는 구간만 `mr - 0.8*보컬`로 감쇄(0.1초 페이드), `ResidualSpan` 반환), Task 6 완료 (`loudness.py`: `restore_section_loudness` 앞뒤 3초 기준 비율로 choir 구간 게인(0~6dB, 0.2초 램프), `finalize` 피크 -1dBFS 정규화), Task 5 완료 (`restore.py`: `restore_choir`, choir 구간만 믹스-보컬 나머지로 복구, 경계 0.1초 램프, 칸별 |I'|<=|M| 클램프(`restore_choir_bins`), 채널별 처리로 메모리 절감), Task 4 완료 (구간 검출 `sections.py`: `detect_vocal_sections`, `frames_mask`; 합창 판정은 절대 폭 3kHz OR 하위 20% 백분위 기준 1.5배 OR 평탄도) — Task 3까지: STFT/앙상블(Task 2)에 이어 분리 백엔드(`separate.py`: `AudioSeparatorBackend`, `normalize_stems`, `DEFAULT_MODELS` 2개, `MODEL_DIR`)와 `engine/MODELS.md`(라이선스 일부 unknown, 상업 출시 전 확인)
+- 단계: **Phase 0 종료(2026-11-26), 웹툴 MVP와 'MS Audio' 조직 계획 수립 중.** 라이브 끊김은 연구 과제로 이관 (아래 '라이브 끊김'). 이전: Task 9 Step 4 청취 판정 완료(2026-11-26 새 #13 만족) (아래 'Task 9 결과'). Task 8 완료 (`pipeline.py`: `run_pipeline`/`separate_all`/`PipelineConfig`, `stems` 인자로 분리 결과 재사용, `report.json`; `cli.py`; 스모크: 14번 곡 274초 스테레오, 총 658초(분리 360, 잔여 스캔 270, 나머지 약 28), GPU 최대 4355MiB(기준 1117 포함), 구간 53개/합창 29개, 합창 구간 평균 복구량 0.000~0.014로 작음, 잔여 구간 14개), Task 7 완료 (`residual.py`: `scan_and_reduce`가 MR을 재분리해 0.5초 창 RMS가 MR RMS 대비 -30dB를 넘는 구간만 `mr - 0.8*보컬`로 감쇄(0.1초 페이드), `ResidualSpan` 반환), Task 6 완료 (`loudness.py`: `restore_section_loudness` 앞뒤 3초 기준 비율로 choir 구간 게인(0~6dB, 0.2초 램프), `finalize` 피크 -1dBFS 정규화), Task 5 완료 (`restore.py`: `restore_choir`, choir 구간만 믹스-보컬 나머지로 복구, 경계 0.1초 램프, 칸별 |I'|<=|M| 클램프(`restore_choir_bins`), 채널별 처리로 메모리 절감), Task 4 완료 (구간 검출 `sections.py`: `detect_vocal_sections`, `frames_mask`; 합창 판정은 절대 폭 3kHz OR 하위 20% 백분위 기준 1.5배 OR 평탄도) — Task 3까지: STFT/앙상블(Task 2)에 이어 분리 백엔드(`separate.py`: `AudioSeparatorBackend`, `normalize_stems`, `DEFAULT_MODELS` 2개, `MODEL_DIR`)와 `engine/MODELS.md`(라이선스 일부 unknown, 상업 출시 전 확인)
 
 ## 다음 할 일
 1. (완료) Task 1, 2, 3
@@ -13,6 +13,13 @@
 7. Task 9: Step 1~3, 5 완료. Step 4 1차 청취 판정 완료(2026-11-25, 아래 '1차 청취 판정'). 분리 모델 교체 실험 완료(아래 '모델 교체 실험'): **후보 모델로는 라이브 끊김이 해결되지 않음.** 남은 것:
    - (a) (완료, 2026-11-26) 새 #13 청취: **만족**. 원하면 유봉의 `model_trial/*.mp3` 모델별 비교 청취
    - (b) 라이브 대응 방향 결정 → Step 6. 선택지: ① 끊김 보정 단계 추가(아래 제안), ② 라이브는 범위 밖, ③ 다른 모델 더 찾기
+
+## 라이브 끊김: 보정 시험 결과와 결정 (2026-11-26)
+- 사용자 결정: 보컬 누출 최소화가 1번 목표. A1을 완화해 '짧은 끊김은 앞뒤 MR을 이어 붙여 메움(원곡 크기 상한)'을 시험.
+- 스파이크(세션 임시 폴더, 커밋 안 함): 앙상블 직후 보정 시 끊김 수 유봉 47→20, 낡은 침대 9→6, #13 10→4 (Gaudio 25/9/4). 기준 칸은 꺼짐 경사면 밖에서 찾아야 했고(바로 옆 칸 기준이면 47→38), 최종 결과에 사후 적용하면 47→33.
+- **청취 판정: 해결되지 않음.** 숫자 지표는 좋아졌지만 귀로는 문제가 남는다 → 지표(0.1초 RMS 끊김 수)가 실제 문제를 다 잡지 못한다는 뜻.
+- 결정: 라이브 끊김은 엔진에 넣지 않고 **지속 모니터링·연구 과제**로 넘긴다. Phase 0은 여기서 종료하고 웹툴(MVP)로 간다.
+- 청취 파일: `engine/out/phase0/14. 소리도둑 유봉 AR/dip_spike/`.
 
 ## 1차 청취 판정 (2026-11-25)
 - 낡은 침대를 타고: **만족**.
