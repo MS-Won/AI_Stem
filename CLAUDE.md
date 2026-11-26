@@ -2,15 +2,19 @@
 
 ## 세션 시작 시
 **먼저 `docs/STATE.md`를 읽어라.** 현재 진행 상황과 다음 할 일이 거기 있다.
+- 맨 위 `## 대표 확인`의 대기 중인 결정부터 대표(사용자)에게 묻는다.
+- 메인 세션은 MS Audio의 **기획실**이다. 부서와 흐름은 `docs/company/README.md`. 출시가 가장 중요하다.
 
 ## 프로젝트
-합창이 있는 곡에서 합창 구간까지 꽉 찬 MR(반주)을 만드는 Python 엔진 `mrengine` (`engine/`).
+MS Audio(가칭). 합창이 있는 곡에서 합창 구간까지 꽉 찬 MR(반주)을 만드는 웹툴. 엔진은 Python `mrengine` (`engine/`), 웹은 `web/` (Phase 1).
 
 ## 문서 지도
 - 설계: `docs/superpowers/specs/2026-11-24-choir-mr-mvp-design.md`
 - 계획: `docs/superpowers/plans/2026-11-24-phase0-mr-engine.md`
 - 현재 상태: `docs/STATE.md`
 - 할 일: `todo.md`
+- 운영 체계 설계: `docs/superpowers/specs/2026-11-26-ms-audio-org-design.md`, 조직·흐름 요약: `docs/company/README.md`
+- 대표 보고서: `docs/company/reports/`, 결정 기록: `docs/company/decisions.md`
 
 ## 환경
 - Python 3.12, 가상환경 `engine/.venv` (git 제외). ffmpeg/ffprobe는 PATH에 있어야 한다.
@@ -35,3 +39,5 @@
 - TDD: 실패하는 테스트 먼저. pytest가 통과한 뒤에만 커밋한다.
 - 커밋 메시지는 한국어로, 왜 그렇게 했는지를 남긴다.
 - 작업이 끝나면 `docs/STATE.md`와 `todo.md`를 갱신한다.
+- 큰 작업 단위(계획서 하나, 또는 하루 작업)가 끝나면: `auditor` 점검 → 대표 보고서 → `decisions.md`·STATE.md·todo.md 갱신 → 커밋 → **push** (평일 아침 예약 알림이 GitHub main을 읽는다).
+- 오래 걸리는 작업이 끝나거나 대표 결정이 필요해지면 푸시 알림을 보낸다.
