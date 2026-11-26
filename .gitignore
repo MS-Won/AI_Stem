@@ -10,3 +10,4 @@ __pycache__/
 .superpowers/
 engine/models/
 engine/out/
+*.egg-info/
