@@ -1,12 +1,13 @@
 # 현재 상태
 
 ## 대표 확인
-- 최신 보고서: (0단계 보고서 작성 전)
-- 대기 중인 결정: 없음
+- 최신 보고서: `docs/company/reports/2026-11-26-stage0.md`
+- 대기 중인 결정: ① main 병합·push 허용 ② GitHub 연결(`/web-setup`, 아침 알림용) ③ 스튜디오 2곡이 Gaudio보다 확실히 더 꽉 찬가
+- 오늘 할 일: 병합 → Phase 1 1단계(디자인 시안)·2단계(web/ 뼈대) 시작
 
 
 - 브랜치: `phase0-engine`
-- 단계: **Phase 0 종료(2026-11-26), 웹툴 MVP와 'MS Audio' 조직 계획 수립 중.** 라이브 끊김은 연구 과제로 이관 (아래 '라이브 끊김'). 이전: Task 9 Step 4 청취 판정 완료(2026-11-26 새 #13 만족) (아래 'Task 9 결과'). Task 8 완료 (`pipeline.py`: `run_pipeline`/`separate_all`/`PipelineConfig`, `stems` 인자로 분리 결과 재사용, `report.json`; `cli.py`; 스모크: 14번 곡 274초 스테레오, 총 658초(분리 360, 잔여 스캔 270, 나머지 약 28), GPU 최대 4355MiB(기준 1117 포함), 구간 53개/합창 29개, 합창 구간 평균 복구량 0.000~0.014로 작음, 잔여 구간 14개), Task 7 완료 (`residual.py`: `scan_and_reduce`가 MR을 재분리해 0.5초 창 RMS가 MR RMS 대비 -30dB를 넘는 구간만 `mr - 0.8*보컬`로 감쇄(0.1초 페이드), `ResidualSpan` 반환), Task 6 완료 (`loudness.py`: `restore_section_loudness` 앞뒤 3초 기준 비율로 choir 구간 게인(0~6dB, 0.2초 램프), `finalize` 피크 -1dBFS 정규화), Task 5 완료 (`restore.py`: `restore_choir`, choir 구간만 믹스-보컬 나머지로 복구, 경계 0.1초 램프, 칸별 |I'|<=|M| 클램프(`restore_choir_bins`), 채널별 처리로 메모리 절감), Task 4 완료 (구간 검출 `sections.py`: `detect_vocal_sections`, `frames_mask`; 합창 판정은 절대 폭 3kHz OR 하위 20% 백분위 기준 1.5배 OR 평탄도) — Task 3까지: STFT/앙상블(Task 2)에 이어 분리 백엔드(`separate.py`: `AudioSeparatorBackend`, `normalize_stems`, `DEFAULT_MODELS` 2개, `MODEL_DIR`)와 `engine/MODELS.md`(라이선스 일부 unknown, 상업 출시 전 확인)
+- 단계: **Phase 0 종료(2026-11-26), 0단계(운영 체계) 완료, Phase 1 1·2단계 대기(main 병합 후 시작).** 라이브 끊김은 연구 과제로 이관 (아래 '라이브 끊김'). 이전: Task 9 Step 4 청취 판정 완료(2026-11-26 새 #13 만족) (아래 'Task 9 결과'). Task 8 완료 (`pipeline.py`: `run_pipeline`/`separate_all`/`PipelineConfig`, `stems` 인자로 분리 결과 재사용, `report.json`; `cli.py`; 스모크: 14번 곡 274초 스테레오, 총 658초(분리 360, 잔여 스캔 270, 나머지 약 28), GPU 최대 4355MiB(기준 1117 포함), 구간 53개/합창 29개, 합창 구간 평균 복구량 0.000~0.014로 작음, 잔여 구간 14개), Task 7 완료 (`residual.py`: `scan_and_reduce`가 MR을 재분리해 0.5초 창 RMS가 MR RMS 대비 -30dB를 넘는 구간만 `mr - 0.8*보컬`로 감쇄(0.1초 페이드), `ResidualSpan` 반환), Task 6 완료 (`loudness.py`: `restore_section_loudness` 앞뒤 3초 기준 비율로 choir 구간 게인(0~6dB, 0.2초 램프), `finalize` 피크 -1dBFS 정규화), Task 5 완료 (`restore.py`: `restore_choir`, choir 구간만 믹스-보컬 나머지로 복구, 경계 0.1초 램프, 칸별 |I'|<=|M| 클램프(`restore_choir_bins`), 채널별 처리로 메모리 절감), Task 4 완료 (구간 검출 `sections.py`: `detect_vocal_sections`, `frames_mask`; 합창 판정은 절대 폭 3kHz OR 하위 20% 백분위 기준 1.5배 OR 평탄도) — Task 3까지: STFT/앙상블(Task 2)에 이어 분리 백엔드(`separate.py`: `AudioSeparatorBackend`, `normalize_stems`, `DEFAULT_MODELS` 2개, `MODEL_DIR`)와 `engine/MODELS.md`(라이선스 일부 unknown, 상업 출시 전 확인)
 
 ## 다음 할 일
 1. (완료) Task 1, 2, 3

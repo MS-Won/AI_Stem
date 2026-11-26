@@ -1,4 +1,16 @@
-# 할 일 (Phase 0 MR 엔진)
+# 할 일
+
+## Phase 1 웹 MVP (최대 2주, main 병합일부터) — `docs/superpowers/specs/2026-11-26-ms-audio-org-design.md` §8
+- [x] 0단계: 운영 체계 (docs/company, 에이전트 5개, CLAUDE.md 규칙, 첫 보고서)
+  - [ ] phase0-engine → main 병합·push (대표 허용 대기)
+  - [ ] 평일 아침 푸시 알림 예약 (GitHub 연결 대기)
+- [ ] 1단계 디자인팀: 브랜드 기초 + 시안 3개 → 대표 승인
+- [ ] 2단계 개발팀: web/ 뼈대, Supabase 스키마, 소셜 로그인, RLS, 업로드
+- [ ] 3단계 개발팀: 대표 PC 워커와 작업 흐름, 24시간 삭제, 모델 라이선스 확인
+- [ ] 4단계 개발팀: 승인된 시안으로 화면 구현
+- [ ] 5단계 품질팀: 배포 URL에서 낡은 침대 끝에서 끝까지
+
+# Phase 0 MR 엔진 (종료)
 
 - [x] Task 1: 엔진 뼈대, 작업 문서, 오디오 입출력
 - [x] Task 2: STFT 공통 함수와 앙상블 (왕복 복원 atol 1e-4, 프레임 중심 시각 검증, avg/min_mag/max_mag 테스트 8개 통과, 전체 13 passed)
